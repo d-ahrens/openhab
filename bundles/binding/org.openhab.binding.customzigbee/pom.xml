@@ -13,6 +13,7 @@
 		<bundle.namespace>org.openhab.binding.customzigbee</bundle.namespace>
 		<deb.name>openhab-addon-binding-CustomZigBee</deb.name>
 		<deb.description>openhab addon binding CustomZigBee</deb.description>
+		<deb.depends>openhab-addon-io-serial</deb.depends>
 	</properties>
 
 	<modelVersion>4.0.0</modelVersion>
