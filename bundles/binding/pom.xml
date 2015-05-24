@@ -87,6 +87,7 @@
     <module>org.openhab.binding.em</module>
     <module>org.openhab.binding.s300th</module>
     <module>org.openhab.binding.heatmiser</module>
+    <module>org.openhab.binding.hms</module>
     <module>org.openhab.binding.swegonventilation</module>
     <module>org.openhab.binding.maxcube</module>
     <module>org.openhab.binding.maxcube.test</module>
@@ -153,6 +154,7 @@
     <module>org.openhab.binding.mailcontrol</module>
     <module>org.openhab.binding.primare</module>
     <module>org.openhab.binding.frontiersiliconradio</module>
+    <module>org.openhab.binding.panasonictv</module>
   </modules>
 
 </project>
