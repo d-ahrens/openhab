@@ -147,10 +147,11 @@
     <module>org.openhab.binding.satel</module>
     <module>org.openhab.binding.harmonyhub</module>
     <module>org.openhab.binding.plex</module>
+	<module>org.openhab.binding.customzigbee</module>
     <module>org.openhab.binding.mochadx10</module>
     <module>org.openhab.binding.denon</module>
     <module>org.openhab.binding.mailcontrol</module>
-    <module>org.openhab.binding.customzigbee</module>    <module>org.openhab.binding.primare</module>
+    <module>org.openhab.binding.primare</module>
     <module>org.openhab.binding.frontiersiliconradio</module>  </modules>
 
 </project>
