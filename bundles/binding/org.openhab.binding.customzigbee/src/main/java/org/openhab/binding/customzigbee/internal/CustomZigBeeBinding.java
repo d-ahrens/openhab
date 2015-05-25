@@ -8,149 +8,187 @@
  */
 package org.openhab.binding.customzigbee.internal;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
-import org.openhab.binding.customzigbee.CustomZigBeeBindingProvider;
-
-import org.apache.commons.lang.StringUtils;
-import org.openhab.core.binding.AbstractActiveBinding;
+import org.openhab.core.events.AbstractEventSubscriber;
+import org.openhab.core.events.EventPublisher;
+import org.openhab.core.items.Item;
+import org.openhab.core.library.items.StringItem;
+import org.openhab.core.library.items.SwitchItem;
+import org.openhab.core.library.types.StringType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
-import org.osgi.framework.BundleContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-	
+import org.openhab.model.item.binding.BindingConfigParseException;
+import org.openhab.model.item.binding.BindingConfigReader;
 
 /**
- * Implement this class if you are going create an actively polling service
- * like querying a Website/Device.
+ * <p>This class implements a binding of serial devices to openHAB.
+ * The binding configurations are provided by the {@link GenericItemProvider}.</p>
  * 
- * @author d-ahrens
- * @since 1.7.0
+ * <p>The format of the binding configuration is simple and looks like this:</p>
+ * serial="&lt;port&gt;" where &lt;port&gt; is the identification of the serial port on the host system, e.g.
+ * "COM1" on Windows, "/dev/ttyS0" on Linux or "/dev/tty.PL2303-0000103D" on Mac
+ * <p>Switch items with this binding will receive an ON-OFF update on the bus, whenever data becomes available on the serial interface<br/>
+ * String items will receive the submitted data in form of a string value as a status update, while openHAB commands to a Switch item is
+ * sent out as data through the serial interface.</p>
+ * 
+ * @author Kai Kreuzer
+ *
  */
-public class CustomZigBeeBinding extends AbstractActiveBinding<CustomZigBeeBindingProvider> {
+public class CustomZigBeeBinding extends AbstractEventSubscriber implements BindingConfigReader {
 
-	private static final Logger logger = 
-		LoggerFactory.getLogger(CustomZigBeeBinding.class);
+	private Map<String, SerialDevice> serialDevices = new HashMap<String, SerialDevice>();
 
-	/**
-	 * The BundleContext. This is only valid when the bundle is ACTIVE. It is set in the activate()
-	 * method and must not be accessed anymore once the deactivate() method was called or before activate()
-	 * was called.
-	 */
-	private BundleContext bundleContext;
+	/** stores information about the which items are associated to which port. The map has this content structure: itemname -> port */ 
+	private Map<String, String> itemMap = new HashMap<String, String>();
+	
+	/** stores information about the context of items. The map has this content structure: context -> Set of itemNames */ 
+	private Map<String, Set<String>> contextMap = new HashMap<String, Set<String>>();
 
+	private EventPublisher eventPublisher = null;
 	
-	/** 
-	 * the refresh interval which is used to poll values from the CustomZigBee
-	 * server (optional, defaults to 60000ms)
-	 */
-	private long refreshInterval = 60000;
-	
-	
-	public CustomZigBeeBinding() {
-	}
+	public void setEventPublisher(EventPublisher eventPublisher) {
+		this.eventPublisher = eventPublisher;
 		
-	
-	/**
-	 * Called by the SCR to activate the component with its configuration read from CAS
-	 * 
-	 * @param bundleContext BundleContext of the Bundle that defines this component
-	 * @param configuration Configuration properties for this component obtained from the ConfigAdmin service
-	 */
-	public void activate(final BundleContext bundleContext, final Map<String, Object> configuration) {
-		this.bundleContext = bundleContext;
-
-		// the configuration is guaranteed not to be null, because the component definition has the
-		// configuration-policy set to require. If set to 'optional' then the configuration may be null
-		
-			
-		// to override the default refresh interval one has to add a 
-		// parameter to openhab.cfg like <bindingName>:refresh=<intervalInMs>
-		String refreshIntervalString = (String) configuration.get("refresh");
-		if (StringUtils.isNotBlank(refreshIntervalString)) {
-			refreshInterval = Long.parseLong(refreshIntervalString);
+		for(SerialDevice serialDevice : serialDevices.values()) {
+			serialDevice.setEventPublisher(eventPublisher);
 		}
+	}
+	
+	public void unsetEventPublisher(EventPublisher eventPublisher) {
+		this.eventPublisher = null;
 
-		// read further config parameters here ...
-
-		setProperlyConfigured(true);
+		for(SerialDevice serialDevice : serialDevices.values()) {
+			serialDevice.setEventPublisher(null);
+		}
 	}
 	
 	/**
-	 * Called by the SCR when the configuration of a binding has been changed through the ConfigAdmin service.
-	 * @param configuration Updated configuration properties
+	 * {@inheritDoc}
 	 */
-	public void modified(final Map<String, Object> configuration) {
-		// update the internal configuration accordingly
-	}
-	
-	/**
-	 * Called by the SCR to deactivate the component when either the configuration is removed or
-	 * mandatory references are no longer satisfied or the component has simply been stopped.
-	 * @param reason Reason code for the deactivation:<br>
-	 * <ul>
-	 * <li> 0 – Unspecified
-     * <li> 1 – The component was disabled
-     * <li> 2 – A reference became unsatisfied
-     * <li> 3 – A configuration was changed
-     * <li> 4 – A configuration was deleted
-     * <li> 5 – The component was disposed
-     * <li> 6 – The bundle was stopped
-     * </ul>
-	 */
-	public void deactivate(final int reason) {
-		this.bundleContext = null;
-		// deallocate resources here that are no longer needed and 
-		// should be reset when activating this binding again
-	}
-
-	
-	/**
-	 * @{inheritDoc}
-	 */
-	@Override
-	protected long getRefreshInterval() {
-		return refreshInterval;
+	public void receiveCommand(String itemName, Command command) {
+		if(itemMap.keySet().contains(itemName)) {
+			SerialDevice serialDevice = serialDevices.get(itemMap.get(itemName));
+			if(command instanceof StringType) {
+				serialDevice.writeString(command.toString());
+			}
+		}
 	}
 
 	/**
-	 * @{inheritDoc}
+	 * {@inheritDoc}
 	 */
-	@Override
-	protected String getName() {
-		return "CustomZigBee Refresh Service";
-	}
-	
-	/**
-	 * @{inheritDoc}
-	 */
-	@Override
-	protected void execute() {
-		// the frequently executed code (polling) goes here ...
-		logger.debug("execute() method is called!");
+	public void receiveUpdate(String itemName, State newStatus) {
+		// ignore any updates
 	}
 
 	/**
-	 * @{inheritDoc}
+	 * {@inheritDoc}
 	 */
-	@Override
-	protected void internalReceiveCommand(String itemName, Command command) {
-		// the code being executed when a command was sent on the openHAB
-		// event bus goes here. This method is only called if one of the 
-		// BindingProviders provide a binding for the given 'itemName'.
-		logger.debug("internalReceiveCommand({},{}) is called!", itemName, command);
+	public String getBindingType() {
+		return "customzigbee";
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public void validateItemType(Item item, String bindingConfig) throws BindingConfigParseException {
+		if (!(item instanceof SwitchItem || item instanceof StringItem)) {
+			throw new BindingConfigParseException("item '" + item.getName()
+					+ "' is of type '" + item.getClass().getSimpleName()
+					+ "', only Switch- and StringItems are allowed - please check your *.items configuration");
+		}
 	}
 	
 	/**
-	 * @{inheritDoc}
+	 * {@inheritDoc}
 	 */
-	@Override
-	protected void internalReceiveUpdate(String itemName, State newState) {
-		// the code being executed when a state was sent on the openHAB
-		// event bus goes here. This method is only called if one of the 
-		// BindingProviders provide a binding for the given 'itemName'.
-		logger.debug("internalReceiveUpdate({},{}) is called!", itemName, newState);
+	public void processBindingConfiguration(String context, Item item, String bindingConfig) throws BindingConfigParseException {
+		String portConfig[] = bindingConfig.split("@");
+        
+        String port = portConfig[0];
+        int baudRate = 0;
+        
+        if(portConfig.length > 1)
+                baudRate = Integer.parseInt(portConfig[1]);
+        
+        SerialDevice serialDevice = serialDevices.get(port);
+		if (serialDevice == null) {
+			if(baudRate > 0)
+                serialDevice = new SerialDevice(port, baudRate);
+			else
+                serialDevice = new SerialDevice(port);
+       
+			serialDevice.setEventPublisher(eventPublisher);
+			try {
+				serialDevice.initialize();
+			} catch (InitializationException e) {
+				throw new BindingConfigParseException(
+						"Could not open serial port " + port + ": "
+								+ e.getMessage());
+			} catch (Throwable e) {
+				throw new BindingConfigParseException(
+						"Could not open serial port " + port + ": "
+								+ e.getMessage());
+			}
+			itemMap.put(item.getName(), port);
+			serialDevices.put(port, serialDevice);
+		}
+		if (item instanceof StringItem) {
+			if (serialDevice.getStringItemName() == null) {
+				serialDevice.setStringItemName(item.getName());
+			} else {
+				throw new BindingConfigParseException(
+						"There is already another StringItem assigned to serial port "
+								+ port);
+			}
+		} else { // it is a SwitchItem
+			if (serialDevice.getSwitchItemName() == null) {
+				serialDevice.setSwitchItemName(item.getName());
+			} else {
+				throw new BindingConfigParseException(
+						"There is already another SwitchItem assigned to serial port "
+								+ port);
+			}
+		}
+		Set<String> itemNames = contextMap.get(context);
+		if (itemNames == null) {
+			itemNames = new HashSet<String>();
+			contextMap.put(context, itemNames);
+		}
+		itemNames.add(item.getName());
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public void removeConfigurations(String context) {
+		Set<String> itemNames = contextMap.get(context);
+		if(itemNames!=null) {
+			for(String itemName : itemNames) {
+				// we remove all information in the serial devices
+				SerialDevice serialDevice = serialDevices.get(itemMap.get(itemName));
+				itemMap.remove(itemName);
+				if(serialDevice==null) {
+					continue;
+				}
+				if(itemName.equals(serialDevice.getStringItemName())) {
+					serialDevice.setStringItemName(null);
+				}
+				if(itemName.equals(serialDevice.getSwitchItemName())) {
+					serialDevice.setSwitchItemName(null);
+				}
+				// if there is no binding left, dispose this device
+				if(serialDevice.getStringItemName()==null && serialDevice.getSwitchItemName()==null) {
+					serialDevice.close();
+					serialDevices.remove(serialDevice.getPort());
+				}
+			}
+			contextMap.remove(context);
+		}
 	}
 
 }

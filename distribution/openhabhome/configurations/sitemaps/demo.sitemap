@@ -27,7 +27,7 @@ sitemap demo label="Demo House"
 		Text item=Date
 	}
 	Frame label="Demo" {
-		Text label="Group Demo" icon="firstfloor" {
+		/*Text label="Group Demo" icon="firstfloor" {
 			Switch item=Lights mappings=[OFF="All Off"]
 			Group item=Heating
 			Group item=Windows
@@ -66,6 +66,8 @@ sitemap demo label="Demo House"
 				Video url="http://demo.openhab.org/Hue.m4v"
 				Webview url="http://heise-online.mobi/" height=8
 			}
-		}
+		}*/
+		Switch item=CZSwitch label="CustomZigBeeSwitch"
+		Text item=CZString label="CustomZigBeeString"
 	}
 }

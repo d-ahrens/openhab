@@ -123,3 +123,6 @@ Number NoOfPairedDevices "Paired Devices in Range: [%d]"  { bluetooth="!" }
 
 /* Locations */
 Location DemoLocation			"Brandenburg Gate Berlin"
+
+Switch CZSwitch				"CustomZigBee Switch"	{customzigbee="COM49"}
+String CZString				"CustomZigBee String [%s]"	{customzigbee="COM49"}
