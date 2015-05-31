@@ -8,26 +8,22 @@
  */
 package org.openhab.binding.customzigbee.internal.bus;
 
+import gnu.io.NoSuchPortException;
+
 import java.util.Dictionary;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 import org.openhab.binding.customzigbee.CustomZigBeeBindingProvider;
 import org.openhab.binding.customzigbee.internal.InitializationException;
 import org.openhab.binding.customzigbee.internal.SerialDevice;
 import org.openhab.core.binding.AbstractBinding;
+import org.openhab.core.binding.BindingProvider;
 import org.openhab.core.events.EventPublisher;
-import org.openhab.core.items.Item;
-import org.openhab.core.library.items.StringItem;
-import org.openhab.core.library.items.SwitchItem;
-import org.openhab.core.library.types.StringType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
-import org.openhab.model.item.binding.BindingConfigParseException;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>This class implements a binding of serial devices to openHAB.
@@ -45,150 +41,113 @@ import org.osgi.service.cm.ManagedService;
  */
 public class CustomZigBeeBinding extends AbstractBinding<CustomZigBeeBindingProvider> implements ManagedService {
 	
+	private static final Logger logger = LoggerFactory.getLogger(CustomZigBeeBinding.class);
+
+    private static final String CONFIG_KEY_SERIAL_PORT = "serialPort";
+    
+    private static final String CONFIG_KEY_BAUDRATE = "baudrate";
+	
 	// TODO: update class to AbstractBinding, so that we can get information about serial port and baudrate from config
 
-	private Map<String, SerialDevice> serialDevices = new HashMap<String, SerialDevice>();
+	//private Map<String, SerialDevice> serialDevices = new HashMap<String, SerialDevice>();
 
 	/** stores information about the which items are associated to which port. The map has this content structure: itemname -> port */ 
-	private Map<String, String> itemMap = new HashMap<String, String>();
+	//private Map<String, String> itemMap = new HashMap<String, String>();
 	
 	/** stores information about the context of items. The map has this content structure: context -> Set of itemNames */ 
-	private Map<String, Set<String>> contextMap = new HashMap<String, Set<String>>();
+	//private Map<String, Set<String>> contextMap = new HashMap<String, Set<String>>();
 
 	private EventPublisher eventPublisher = null;
+	
+	private SerialDevice serialDevice;
+	
+	private String serialPort;
+	
+	private int baudrate = 38400;
+	
+	@Override
+	public void activate() {
+		if (serialDevice != null) {
+            try {
+            	serialDevice.initialize();
+            } catch (Exception e) {
+                logger.error("Could not connect to " + serialPort, e);
+            }
+        }
+	}
+	
+	@Override
+	public void deactivate() {
+		serialDevice.close();
+	}
+	
+	@Override
+    protected void internalReceiveCommand(String itemName, Command command) {
+		for (CustomZigBeeBindingProvider provider : providers) {
+			// TODO: find provider with itemName
+		}
+		// TODO: change state of item (send OnOffType.ON / OFF)
+	}
+	
+	protected void internalReceiveUpdate(String itemName, State newState) {
+		// TODO: do we need an update of states?
+	}
 	
 	@Override
 	public void setEventPublisher(EventPublisher eventPublisher) {
 		this.eventPublisher = eventPublisher;
-		
-		for(SerialDevice serialDevice : serialDevices.values()) {
-			serialDevice.setEventPublisher(eventPublisher);
-		}
+		serialDevice.setEventPublisher(eventPublisher);
 	}
 	
 	@Override
 	public void unsetEventPublisher(EventPublisher eventPublisher) {
 		this.eventPublisher = null;
-
-		for(SerialDevice serialDevice : serialDevices.values()) {
-			serialDevice.setEventPublisher(null);
-		}
+		serialDevice.setEventPublisher(null);
 	}
 	
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
-	public void receiveCommand(String itemName, Command command) {
-		if(itemMap.keySet().contains(itemName)) {
-			SerialDevice serialDevice = serialDevices.get(itemMap.get(itemName));
-			if(command instanceof StringType) {
-				serialDevice.writeString(command.toString());
-			}
-		}
+	public void updated(Dictionary<String, ?> config) throws ConfigurationException {
+		// TODO: config has changed --> get serial port and (if present) baudrate
+		if (config == null) {
+            return;
+        }
+        serialPort = (String) config.get(CONFIG_KEY_SERIAL_PORT);
+        baudrate = (Integer) config.get(CONFIG_KEY_BAUDRATE);
+
+        if (serialDevice != null) {
+        	serialDevice.close();
+        }
+        try {
+            connect();
+        } catch (InitializationException e) {
+            if (e.getCause() instanceof NoSuchPortException) {
+                throw new ConfigurationException(CONFIG_KEY_SERIAL_PORT, e.getMessage());
+            } else {
+                throw new RuntimeException(e);
+            }
+        }
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
-	public void receiveUpdate(String itemName, State newStatus) {
-		// ignore any updates
+	public void allBindingsChanged(BindingProvider provider) {
+		// TODO: do we need this method?
+	}
+
+	@Override
+	public void bindingChanged(BindingProvider provider, String itemName) {
+		// TODO: do we need this method?
 	}
 	
-	/**
-	 * {@inheritDoc}
-	 */
-	public void processBindingConfiguration(String context, Item item, String bindingConfig) throws BindingConfigParseException {
-		String portConfig[] = bindingConfig.split("@");
-        
-        String port = portConfig[0];
-        int baudRate = 0;
-        
-        if(portConfig.length > 1)
-                baudRate = Integer.parseInt(portConfig[1]);
-        
-        SerialDevice serialDevice = serialDevices.get(port);
-		if (serialDevice == null) {
-			if(baudRate > 0)
-                serialDevice = new SerialDevice(port, baudRate);
-			else
-                serialDevice = new SerialDevice(port);
-       
-			serialDevice.setEventPublisher(eventPublisher);
-			try {
-				serialDevice.initialize();
-			} catch (InitializationException e) {
-				throw new BindingConfigParseException(
-						"Could not open serial port " + port + ": "
-								+ e.getMessage());
-			} catch (Throwable e) {
-				throw new BindingConfigParseException(
-						"Could not open serial port " + port + ": "
-								+ e.getMessage());
-			}
-			itemMap.put(item.getName(), port);
-			serialDevices.put(port, serialDevice);
-		}
-		if (item instanceof StringItem) {
-			if (serialDevice.getStringItemName() == null) {
-				serialDevice.setStringItemName(item.getName());
-			} else {
-				throw new BindingConfigParseException(
-						"There is already another StringItem assigned to serial port "
-								+ port);
-			}
-		} else { // it is a SwitchItem
-			if (serialDevice.getSwitchItemName() == null) {
-				serialDevice.setSwitchItemName(item.getName());
-			} else {
-				throw new BindingConfigParseException(
-						"There is already another SwitchItem assigned to serial port "
-								+ port);
-			}
-		}
-		Set<String> itemNames = contextMap.get(context);
-		if (itemNames == null) {
-			itemNames = new HashSet<String>();
-			contextMap.put(context, itemNames);
-		}
-		itemNames.add(item.getName());
-	}
+	private void connect() throws InitializationException {
+        logger.info("Connecting to ZigBee [serialPort='{}' ].", new Object[] { serialPort });
 
-	/**
-	 * {@inheritDoc}
-	 */
-	public void removeConfigurations(String context) {
-		Set<String> itemNames = contextMap.get(context);
-		if(itemNames!=null) {
-			for(String itemName : itemNames) {
-				// we remove all information in the serial devices
-				SerialDevice serialDevice = serialDevices.get(itemMap.get(itemName));
-				itemMap.remove(itemName);
-				if(serialDevice==null) {
-					continue;
-				}
-				if(itemName.equals(serialDevice.getStringItemName())) {
-					serialDevice.setStringItemName(null);
-				}
-				if(itemName.equals(serialDevice.getSwitchItemName())) {
-					serialDevice.setSwitchItemName(null);
-				}
-				// if there is no binding left, dispose this device
-				if(serialDevice.getStringItemName()==null && serialDevice.getSwitchItemName()==null) {
-					serialDevice.close();
-					serialDevices.remove(serialDevice.getPort());
-				}
-			}
-			contextMap.remove(context);
-		}
-	}
+        serialDevice = new SerialDevice(serialPort, baudrate);
+        serialDevice.setEventPublisher(eventPublisher);
+        serialDevice.initialize();
 
-	@Override
-	public void updated(Dictionary<String, ?> properties)
-			throws ConfigurationException {
-		// TODO Auto-generated method stub
-		
-	}
-
+        for (CustomZigBeeBindingProvider provider : providers) {
+            //initializeAllItemsInProvider(provider);
+            // TODO: init all items in provider
+        }
+    }
 }

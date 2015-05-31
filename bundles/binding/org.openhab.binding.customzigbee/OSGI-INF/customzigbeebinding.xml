@@ -9,12 +9,12 @@
     http://www.eclipse.org/legal/epl-v10.html
 
 -->
-<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" activate="activate" deactivate="deactivate" immediate="true" name="org.openhab.binding.customzigbee">
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" activate="activate" deactivate="deactivate" immediate="true" name="org.openhab.binding.customzigbee.binding">
    <implementation class="org.openhab.binding.customzigbee.internal.bus.CustomZigBeeBinding"/>
    
    <service>
-      <provide interface="org.openhab.model.item.binding.BindingConfigReader"/>
       <provide interface="org.osgi.service.event.EventHandler"/>
+      <provide interface="org.osgi.service.cm.ManagedService"/>
    </service>
    
    <property name="event.topics" type="String" value="openhab/command/*"/>

@@ -9,6 +9,7 @@
 package org.openhab.binding.customzigbee.internal;
 
 import gnu.io.CommPortIdentifier;
+import gnu.io.NoSuchPortException;
 import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
@@ -35,11 +36,13 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class SerialDevice implements SerialPortEventListener {
+	
+	// TODO: change SerialDevice class => has to send status updates for LEDs
 
 	private static final Logger logger = LoggerFactory.getLogger(SerialDevice.class);
 
 	private String port;
-	private int baud = 9600;
+	private int baud = 38400;
 	private String stringItemName;
 	private String switchItemName;
 
@@ -153,7 +156,7 @@ public class SerialDevice implements SerialPortEventListener {
 					sb.append(id.getName() + "\n");
 				}
 			}
-			throw new InitializationException("Serial port '" + port + "' could not be found. Available ports are:\n" + sb.toString());
+			throw new InitializationException("Serial port '" + port + "' could not be found. Available ports are:\n" + sb.toString(), new NoSuchPortException());
 		}
 	}
 

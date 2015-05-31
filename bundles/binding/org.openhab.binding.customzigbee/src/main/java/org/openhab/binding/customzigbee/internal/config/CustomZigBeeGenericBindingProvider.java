@@ -8,6 +8,10 @@
  */
 package org.openhab.binding.customzigbee.internal.config;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import org.openhab.binding.customzigbee.CustomZigBeeBindingProvider;
 import org.openhab.core.binding.BindingConfig;
 import org.openhab.core.items.Item;
@@ -27,7 +31,7 @@ import org.slf4j.LoggerFactory;
 public class CustomZigBeeGenericBindingProvider extends AbstractGenericBindingProvider implements CustomZigBeeBindingProvider {
 	
     private static final Logger logger = LoggerFactory.getLogger(CustomZigBeeGenericBindingProvider.class);
-    //private Map<String, Item> items = new HashMap<String, Item>();
+    private Map<String, Item> items = new HashMap<String, Item>();
 
 	/**
 	 * {@inheritDoc}
@@ -64,29 +68,33 @@ public class CustomZigBeeGenericBindingProvider extends AbstractGenericBindingPr
 		addBindingConfig(item, config);	
     }
 
-//    @Override
-//    protected void addBindingConfig(Item item, BindingConfig config) {
-//        items.put(item.getName(), item);
-//        super.addBindingConfig(item, config);
-//    }
+    @Override
+    protected void addBindingConfig(Item item, BindingConfig config) {
+        items.put(item.getName(), item);
+        super.addBindingConfig(item, config);
+    }
 
-//    @Override
-//    public void removeConfigurations(String context) {
-//        Set<Item> configuredItems = contextMap.get(context);
-//        if (configuredItems != null) {
-//            for (Item item : configuredItems) {
-//                items.remove(item.getName());
-//            }
-//        }
-//        super.removeConfigurations(context);
-//    }
+    @Override
+    public void removeConfigurations(String context) {
+        Set<Item> configuredItems = contextMap.get(context);
+        if (configuredItems != null) {
+            for (Item item : configuredItems) {
+                items.remove(item.getName());
+            }
+        }
+        super.removeConfigurations(context);
+    }
 
 	@Override
 	public int getLED(String itemName) {
 		CustomZigBeeBindingConfig config = (CustomZigBeeBindingConfig) bindingConfigs.get(itemName);
         return config != null ? config.led : null;
 	}
-	
+
+	@Override
+    public Item getItem(String itemName) {
+        return items.get(itemName);
+    }
 	
 	/**
 	 * This is a helper class holding binding specific configuration details
@@ -98,6 +106,4 @@ public class CustomZigBeeGenericBindingProvider extends AbstractGenericBindingPr
 		// TODO: map led => room, e.g. 1 => livingroom
 		public int led;
 	}
-	
-	
 }
