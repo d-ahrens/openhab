@@ -9,12 +9,18 @@
     http://www.eclipse.org/legal/epl-v10.html
 
 -->
-<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="org.openhab.binding.customzigbee">
-   <implementation class="org.openhab.binding.customzigbee.internal.CustomZigBeeBinding"/>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" activate="activate" deactivate="deactivate" immediate="true" name="org.openhab.binding.customzigbee">
+   <implementation class="org.openhab.binding.customzigbee.internal.bus.CustomZigBeeBinding"/>
+   
    <service>
       <provide interface="org.openhab.model.item.binding.BindingConfigReader"/>
       <provide interface="org.osgi.service.event.EventHandler"/>
    </service>
-   <reference bind="setEventPublisher" cardinality="1..1" interface="org.openhab.core.events.EventPublisher" name="EventPublisher" policy="dynamic" unbind="unsetEventPublisher"/>
+   
    <property name="event.topics" type="String" value="openhab/command/*"/>
+   <property name="service.pid" type="String" value="org.openhab.customzigbee"/>
+   
+   <reference bind="addBindingProvider" cardinality="1..n" interface="org.openhab.binding.customzigbee.CustomZigBeeBindingProvider" name="CustomZigBeeBindingProvider" policy="dynamic" unbind="removeBindingProvider"/>
+   <reference bind="setEventPublisher" cardinality="1..1" interface="org.openhab.core.events.EventPublisher" name="EventPublisher" policy="dynamic" unbind="unsetEventPublisher"/>
+   
 </scr:component>

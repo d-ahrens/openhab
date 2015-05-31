@@ -6,14 +6,18 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.customzigbee.internal;
+package org.openhab.binding.customzigbee.internal.bus;
 
+import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.openhab.core.events.AbstractEventSubscriber;
+import org.openhab.binding.customzigbee.CustomZigBeeBindingProvider;
+import org.openhab.binding.customzigbee.internal.InitializationException;
+import org.openhab.binding.customzigbee.internal.SerialDevice;
+import org.openhab.core.binding.AbstractBinding;
 import org.openhab.core.events.EventPublisher;
 import org.openhab.core.items.Item;
 import org.openhab.core.library.items.StringItem;
@@ -22,7 +26,8 @@ import org.openhab.core.library.types.StringType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 import org.openhab.model.item.binding.BindingConfigParseException;
-import org.openhab.model.item.binding.BindingConfigReader;
+import org.osgi.service.cm.ConfigurationException;
+import org.osgi.service.cm.ManagedService;
 
 /**
  * <p>This class implements a binding of serial devices to openHAB.
@@ -38,7 +43,9 @@ import org.openhab.model.item.binding.BindingConfigReader;
  * @author Kai Kreuzer
  *
  */
-public class CustomZigBeeBinding extends AbstractEventSubscriber implements BindingConfigReader {
+public class CustomZigBeeBinding extends AbstractBinding<CustomZigBeeBindingProvider> implements ManagedService {
+	
+	// TODO: update class to AbstractBinding, so that we can get information about serial port and baudrate from config
 
 	private Map<String, SerialDevice> serialDevices = new HashMap<String, SerialDevice>();
 
@@ -50,6 +57,7 @@ public class CustomZigBeeBinding extends AbstractEventSubscriber implements Bind
 
 	private EventPublisher eventPublisher = null;
 	
+	@Override
 	public void setEventPublisher(EventPublisher eventPublisher) {
 		this.eventPublisher = eventPublisher;
 		
@@ -58,6 +66,7 @@ public class CustomZigBeeBinding extends AbstractEventSubscriber implements Bind
 		}
 	}
 	
+	@Override
 	public void unsetEventPublisher(EventPublisher eventPublisher) {
 		this.eventPublisher = null;
 
@@ -69,6 +78,7 @@ public class CustomZigBeeBinding extends AbstractEventSubscriber implements Bind
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public void receiveCommand(String itemName, Command command) {
 		if(itemMap.keySet().contains(itemName)) {
 			SerialDevice serialDevice = serialDevices.get(itemMap.get(itemName));
@@ -81,26 +91,9 @@ public class CustomZigBeeBinding extends AbstractEventSubscriber implements Bind
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public void receiveUpdate(String itemName, State newStatus) {
 		// ignore any updates
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	public String getBindingType() {
-		return "customzigbee";
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	public void validateItemType(Item item, String bindingConfig) throws BindingConfigParseException {
-		if (!(item instanceof SwitchItem || item instanceof StringItem)) {
-			throw new BindingConfigParseException("item '" + item.getName()
-					+ "' is of type '" + item.getClass().getSimpleName()
-					+ "', only Switch- and StringItems are allowed - please check your *.items configuration");
-		}
 	}
 	
 	/**
@@ -189,6 +182,13 @@ public class CustomZigBeeBinding extends AbstractEventSubscriber implements Bind
 			}
 			contextMap.remove(context);
 		}
+	}
+
+	@Override
+	public void updated(Dictionary<String, ?> properties)
+			throws ConfigurationException {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
