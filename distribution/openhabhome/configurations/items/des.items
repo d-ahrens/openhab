@@ -1,0 +1,32 @@
+Group All
+Group gGF 		(All)
+Group gFF 		(All)
+Group gC 		(All)
+Group Outdoor 	(All)
+Group Shutters 	(All)
+Group Weather 	(All)
+Group Status 	(All)
+
+Group GF_Living 	"Living Room" 	<video> 	(gGF)
+Group GF_Kitchen 	"Kitchen" 		<kitchen> 	(gGF)
+Group GF_Toilet 	"Toilet" 		<bath> 		(gGF)
+Group GF_Corridor 	"Corridor" 		<corridor> 	(gGF)
+
+Group FF_Bath 		"Bathroom" 		<bath> 		(gFF)
+Group FF_Office 	"Office" 		<office> 	(gFF)
+Group FF_Child 		"Child's Room" 	<boy1> 		(gFF)
+Group FF_Bed 		"Bedroom" 		<bedroom> 	(gFF)
+Group FF_Corridor 	"Corridor" 		<corridor> 	(gFF)
+
+/* active groups */
+Group:Switch:OR(ON, OFF) 		Lights 		"All Lights [(%d)]" 								(All)
+Group:Switch:OR(ON, OFF) 		Heating 	"No. of Active Heatings [(%d)]" 	<heating> 		(All)
+Group:Number:AVG 				Temperature	"Avg. Room Temperature [%.1f °C]" 	<temperature>	(Status)
+Group:Contact:OR(OPEN, CLOSED) 	Windows 	"Open windows [(%d)]"				<contact>		(All)
+
+Switch CZBLED1				"CustomZigBee LED"	{customzigbee="LED1"}
+Switch CZBLED2				"CustomZigBee LED"	{customzigbee="LED2"}
+Switch CZBLED3				"CustomZigBee LED"	{customzigbee="LED3"}
+Switch CZBLED4				"CustomZigBee LED"	{customzigbee="LED4"}
+Switch CZBLED5				"CustomZigBee LED"	{customzigbee="LED5"}
+Switch CZBLED6				"CustomZigBee LED"	{customzigbee="LED6"}

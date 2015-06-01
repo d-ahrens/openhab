@@ -68,6 +68,5 @@ sitemap demo label="Demo House"
 			}
 		}*/
 		Switch item=CZSwitch label="CustomZigBeeSwitch"
-		Text item=CZString label="CustomZigBeeString"
 	}
 }
