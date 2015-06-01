@@ -18,6 +18,7 @@ import org.openhab.binding.customzigbee.internal.SerialDevice;
 import org.openhab.core.binding.AbstractBinding;
 import org.openhab.core.binding.BindingProvider;
 import org.openhab.core.events.EventPublisher;
+import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 import org.osgi.service.cm.ConfigurationException;
@@ -84,9 +85,16 @@ public class CustomZigBeeBinding extends AbstractBinding<CustomZigBeeBindingProv
 	@Override
     protected void internalReceiveCommand(String itemName, Command command) {
 		for (CustomZigBeeBindingProvider provider : providers) {
-			// TODO: find provider with itemName
+			if( provider.providesBindingFor(itemName) ) {
+				if (command instanceof OnOffType) {
+					OnOffType cmd = (OnOffType) command;
+					String param = cmd.equals(OnOffType.ON) ? "ON" : "OFF";
+					Integer led = provider.getLED(itemName);
+					
+					serialDevice.writeString(led + " " + param);
+				}
+			}
 		}
-		// TODO: change state of item (send OnOffType.ON / OFF)
 	}
 	
 	protected void internalReceiveUpdate(String itemName, State newState) {
@@ -96,23 +104,29 @@ public class CustomZigBeeBinding extends AbstractBinding<CustomZigBeeBindingProv
 	@Override
 	public void setEventPublisher(EventPublisher eventPublisher) {
 		this.eventPublisher = eventPublisher;
-		serialDevice.setEventPublisher(eventPublisher);
+		
+		if(serialDevice != null)
+			serialDevice.setEventPublisher(eventPublisher);
 	}
 	
 	@Override
 	public void unsetEventPublisher(EventPublisher eventPublisher) {
 		this.eventPublisher = null;
-		serialDevice.setEventPublisher(null);
+		
+		if(serialDevice != null)
+			serialDevice.setEventPublisher(null);
 	}
 	
 	@Override
 	public void updated(Dictionary<String, ?> config) throws ConfigurationException {
-		// TODO: config has changed --> get serial port and (if present) baudrate
 		if (config == null) {
             return;
         }
         serialPort = (String) config.get(CONFIG_KEY_SERIAL_PORT);
-        baudrate = (Integer) config.get(CONFIG_KEY_BAUDRATE);
+        
+        if(config.get(CONFIG_KEY_BAUDRATE) != null) {
+        	baudrate = Integer.parseInt( (String) config.get(CONFIG_KEY_BAUDRATE) );
+        }
 
         if (serialDevice != null) {
         	serialDevice.close();
@@ -130,12 +144,12 @@ public class CustomZigBeeBinding extends AbstractBinding<CustomZigBeeBindingProv
 
 	@Override
 	public void allBindingsChanged(BindingProvider provider) {
-		// TODO: do we need this method?
+		// TODO: update all items registered in serialDevice
 	}
 
 	@Override
 	public void bindingChanged(BindingProvider provider, String itemName) {
-		// TODO: do we need this method?
+		// TODO: update binding changes in serialDevice
 	}
 	
 	private void connect() throws InitializationException {
@@ -143,11 +157,9 @@ public class CustomZigBeeBinding extends AbstractBinding<CustomZigBeeBindingProv
 
         serialDevice = new SerialDevice(serialPort, baudrate);
         serialDevice.setEventPublisher(eventPublisher);
+        
         serialDevice.initialize();
 
-        for (CustomZigBeeBindingProvider provider : providers) {
-            //initializeAllItemsInProvider(provider);
-            // TODO: init all items in provider
-        }
+        // TODO: we could init LEDs here (e.g. some LEDs have initial state ON)
     }
 }

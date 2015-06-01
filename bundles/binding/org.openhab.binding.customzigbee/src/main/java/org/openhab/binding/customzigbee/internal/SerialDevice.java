@@ -20,12 +20,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.TooManyListenersException;
 
 import org.apache.commons.io.IOUtils;
 import org.openhab.core.events.EventPublisher;
-import org.openhab.core.library.types.OnOffType;
-import org.openhab.core.library.types.StringType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,15 +35,13 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class SerialDevice implements SerialPortEventListener {
-	
-	// TODO: change SerialDevice class => has to send status updates for LEDs
 
 	private static final Logger logger = LoggerFactory.getLogger(SerialDevice.class);
 
 	private String port;
 	private int baud = 38400;
-	private String stringItemName;
-	private String switchItemName;
+	
+	private List<String> switchItems;
 
 	private EventPublisher eventPublisher;
 
@@ -72,20 +69,31 @@ public class SerialDevice implements SerialPortEventListener {
 		this.eventPublisher = null;
 	}
 
-	public String getStringItemName() {
-		return stringItemName;
+	public List<String> getSwitchItems() {
+		return switchItems;
+	}
+	
+	public void removeSwitchItem(String switchItem) {
+		switchItems.remove(switchItem);
+	}
+	
+	public void clearSwitchItems() {
+		switchItems.clear();
 	}
 
-	public void setStringItemName(String stringItemName) {
-		this.stringItemName = stringItemName;
+	public void setSwitchItems(List<String> switchItems) {
+		this.switchItems = switchItems;
 	}
-
-	public String getSwitchItemName() {
-		return switchItemName;
+	
+	public void addSwitchItem(String switchItem) {
+		if(!switchItems.contains(switchItem))
+			switchItems.add(switchItem);
 	}
-
-	public void setSwitchItemName(String switchItemName) {
-		this.switchItemName = switchItemName;
+	
+	public void addSwitchItems(List<String> switchItems) {
+		for(String switchItem : switchItems) {
+			addSwitchItem(switchItem);
+		}
 	}
 
 	public String getPort() {
@@ -195,14 +203,19 @@ public class SerialDevice implements SerialPortEventListener {
 
 				// send data to the bus
 				logger.debug("Received message '{}' on serial port {}", new String[] { result, port });
-				if (eventPublisher != null && stringItemName != null) {
-					eventPublisher.postUpdate(stringItemName, new StringType(result));
-				}
-				// if we receive empty values, we treat this to be a switch operation
-				if (eventPublisher != null && switchItemName != null && result.trim().isEmpty()) {
-					eventPublisher.postUpdate(switchItemName, OnOffType.ON);
-					eventPublisher.postUpdate(switchItemName, OnOffType.OFF);
-				}
+				
+				
+				// TODO: we could handle the serial message here (e.g. update LED states)
+				
+				
+//				if (eventPublisher != null && stringItemName != null) {
+//					eventPublisher.postUpdate(stringItemName, new StringType(result));
+//				}
+//				// if we receive empty values, we treat this to be a switch operation
+//				if (eventPublisher != null && switchItemName != null && result.trim().isEmpty()) {
+//					eventPublisher.postUpdate(switchItemName, OnOffType.ON);
+//					eventPublisher.postUpdate(switchItemName, OnOffType.OFF);
+//				}
 			} catch (IOException e) {
 				logger.debug("Error receiving data on serial port {}: {}", new String[] { port, e.getMessage() });
 			}
