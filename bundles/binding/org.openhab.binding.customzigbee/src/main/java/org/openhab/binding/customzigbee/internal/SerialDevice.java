@@ -238,6 +238,23 @@ public class SerialDevice implements SerialPortEventListener {
 			logger.error("Error writing '{}' to serial port {}: {}", new String[] { msg, port, e.getMessage() });
 		}
 	}
+	
+	/**
+	 * Sends a string to the serial port of this device
+	 * 
+	 * @param msg the string to send
+	 */
+	public void writeBytes(byte[] bytes) {
+		String msg = (char)bytes[0] + "" + (char)(bytes[1]+'0') + "" + (char)(bytes[2]+'0');
+		logger.debug("Writing '{}' to serial port {}", new String[] { msg, port });
+		try {
+			// write string to serial port
+			outputStream.write(bytes);
+			outputStream.flush();
+		} catch (IOException e) {
+			logger.error("Error writing '{}' to serial port {}: {}", new String[] { msg, port, e.getMessage() });
+		}
+	}
 
 	/**
 	 * Close this serial device
