@@ -103,7 +103,22 @@ public class CustomZigBeeBinding extends AbstractBinding<CustomZigBeeBindingProv
 	}
 	
 	protected void internalReceiveUpdate(String itemName, State newState) {
-		// TODO: do we need an update of states?
+		byte[] output = new byte[3];
+		for (CustomZigBeeBindingProvider provider : providers) {
+			if( provider.providesBindingFor(itemName) ) {
+				if (newState instanceof OnOffType) {
+					OnOffType cmd = (OnOffType) newState;
+					//String param = cmd.equals(OnOffType.ON) ? "ON" : "OFF";
+					Integer led = provider.getLED(itemName);
+					
+					//serialDevice.writeString(led + " " + param);
+					output[0]='L';
+					output[1]=led.byteValue();
+					output[2]=(byte) (cmd.equals(OnOffType.ON) ? 1 : 0);
+					serialDevice.writeBytes(output);
+				}
+			}
+		}
 	}
 	
 	@Override

@@ -3,3 +3,9 @@ import org.openhab.core.persistence.*
 import org.openhab.model.script.actions.*
 
 
+rule "Light"
+	when
+		Item CZBLED1 received command
+	then
+		sendCommand(CZBLED2, ON)
+	end

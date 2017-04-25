@@ -24,9 +24,9 @@ Group:Switch:OR(ON, OFF) 		Heating 	"No. of Active Heatings [(%d)]" 	<heating> 	
 Group:Number:AVG 				Temperature	"Avg. Room Temperature [%.1f °C]" 	<temperature>	(Status)
 Group:Contact:OR(OPEN, CLOSED) 	Windows 	"Open windows [(%d)]"				<contact>		(All)
 
-Switch CZBLED1				"CustomZigBee LED"	{customzigbee="LED1"}
-Switch CZBLED2				"CustomZigBee LED"	{customzigbee="LED2"}
-Switch CZBLED3				"CustomZigBee LED"	{customzigbee="LED3"}
-Switch CZBLED4				"CustomZigBee LED"	{customzigbee="LED4"}
-Switch CZBLED5				"CustomZigBee LED"	{customzigbee="LED5"}
-Switch CZBLED6				"CustomZigBee LED"	{customzigbee="LED6"}
+Switch CZBLED1				"CustomZigBee LED"	{customzigbee="LED9"}
+Switch CZBLED2				"CustomZigBee LED"	{customzigbee="LED10"}
+Switch CZBLED3				"CustomZigBee LED"	{customzigbee="LED11"}
+Switch CZBLED4				"CustomZigBee LED"	{customzigbee="LED12"}
+Switch CZBLED5				"CustomZigBee LED"	{customzigbee="LED13"}
+Switch CZBLED6				"CustomZigBee LED"	{customzigbee="LED14"}
